@@ -5,6 +5,10 @@ using GPUifyLoops: @unroll
 
 include("deriv_ops.jl")
 
+###
+# y_in: input GPU array
+# y_out: output GPU array
+###
 function D2x_GPU(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
 	tidx = (blockIdx().x - 1) * TILE_DIM + threadIdx().x
 	N = Nx*Ny
