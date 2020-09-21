@@ -32,7 +32,7 @@ function D2x(y_in, Nx, Ny, h)
 	N = Nx*Ny
 	y_out = zeros(N)
 	idx = 1:Ny
-	y_out[idx] = (y_in[idx] - 2 .* y_in[Ny_out[.+ idx] + y_in[2*Ny_out[.+ idx]) ./ h^2
+	y_out[idx] = (y_in[idx] - 2 .* y_in[Ny.+ idx] + y_in[2*Ny .+ idx]) ./ h^2
 
 	idx1 = Ny+1:N-Ny
 	y_out[idx1] = (y_in[idx1 .- Ny] - 2 .* y_in[idx1] + y_in[idx1 .+ Ny]) ./ h^2
@@ -239,7 +239,7 @@ function BxSx(y_in, Nx, Ny, h)
 
 	idx = 1:Ny
 	y_out[idx] = (1/h) .* (1.5 .* y_in[idx] - 2 .* y_in[idx .+ Ny] + 0.5 .* y_in[idx .+ 2*Ny])
-	y_out[N-Ny_out[.+ idx] = (1/h) .* (0.5 .* y_in[N-3*Ny_out[.+ idx] - 2 .* y_in[N-2*Ny_out[.+ idx] + 1.5 .* y_in[N-Ny_out[.+ idx])
+	y_out[N-Ny_out[.+ idx] = (1/h) .* (0.5 .* y_in[N-3*Ny .+ idx] - 2 .* y_in[N-2*Ny .+ idx] + 1.5 .* y_in[N-Ny .+ idx])
 
 	return y_out
 	
