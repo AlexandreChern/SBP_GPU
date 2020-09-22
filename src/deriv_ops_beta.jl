@@ -353,135 +353,135 @@ end
 
 # Previous function from deriv_ops.jl
 
-function FACEtoVOL(y_in_face, face, Nx, Ny)
-	N = Nx*Ny
-	y = zeros(N)
+# function FACEtoVOL(y_in_face, face, Nx, Ny)
+# 	N = Nx*Ny
+# 	y = zeros(N)
 
-	if face == 1
-		idx = 1:Ny:N-Ny+1
-	elseif face == 2
-		idx = Ny:Ny:N
-	elseif face == 3
-		idx = 1:Ny
-	elseif face == 4
-		idx = N-Ny+1:N
-	else
-	end
+# 	if face == 1
+# 		idx = 1:Ny:N-Ny+1
+# 	elseif face == 2
+# 		idx = Ny:Ny:N
+# 	elseif face == 3
+# 		idx = 1:Ny
+# 	elseif face == 4
+# 		idx = N-Ny+1:N
+# 	else
+# 	end
 
-	y[idx] = u_face
+# 	y[idx] = u_face
 
-	return y
+# 	return y
 
-end
+# end
 
-function VOLtoFACE(y_in, face, Nx, Ny)
-	N = Nx*Ny
-        y = zeros(N)
+# function VOLtoFACE(y_in, face, Nx, Ny)
+# 	N = Nx*Ny
+#         y = zeros(N)
 
-        if face == 1
-                idx = 1:Ny:N-Ny+1
-        elseif face == 2
-                idx = Ny:Ny:N
-        elseif face == 3
-                idx = 1:Ny
-        elseif face == 4
-                idx = N-Ny+1:N
-        else
-        end
+#         if face == 1
+#                 idx = 1:Ny:N-Ny+1
+#         elseif face == 2
+#                 idx = Ny:Ny:N
+#         elseif face == 3
+#                 idx = 1:Ny
+#         elseif face == 4
+#                 idx = N-Ny+1:N
+#         else
+#         end
 
-	y[idx] = y_in[idx]
-        return y
-end
+# 	y[idx] = y_in[idx]
+#         return y
+# end
 
-function Hxinv(y_in, Nx, Ny, h)
-	N = Nx*Ny
-	y = zeros(N)
+# function Hxinv(y_in, Nx, Ny, h)
+# 	N = Nx*Ny
+# 	y = zeros(N)
 
-	idx = 1:Ny
-	y[idx] = (2*y_in[idx]) .* (1/h)
+# 	idx = 1:Ny
+# 	y[idx] = (2*y_in[idx]) .* (1/h)
 
-	idx = Ny+1:N-Ny
-	y[idx] = (1*y_in[idx]) .* (1/h)
+# 	idx = Ny+1:N-Ny
+# 	y[idx] = (1*y_in[idx]) .* (1/h)
 
-	idx = N-Ny+1:N
-	y[idx] = (2*y_in[idx]) .* (1/h)
+# 	idx = N-Ny+1:N
+# 	y[idx] = (2*y_in[idx]) .* (1/h)
 
-	return y
-end
+# 	return y
+# end
 
-function Hyinv(y_in, Nx, Ny, h)
-	N = Nx*Ny
-	y = zeros(N)
+# function Hyinv(y_in, Nx, Ny, h)
+# 	N = Nx*Ny
+# 	y = zeros(N)
 
-	idx = 1:Ny:N-Ny+1
-	y[idx] = (2*y_in[idx]) .* (1/h)
+# 	idx = 1:Ny:N-Ny+1
+# 	y[idx] = (2*y_in[idx]) .* (1/h)
 
-	idx = Ny:Ny:N
-	y[idx] = (2*y_in[idx]) .* (1/h)
+# 	idx = Ny:Ny:N
+# 	y[idx] = (2*y_in[idx]) .* (1/h)
 
-	for i = 1:Nx
-		idx = 2+(i-1).*Ny:i*Ny-1
-		y[idx] = y_in[idx] .* (1/h)
-	end
+# 	for i = 1:Nx
+# 		idx = 2+(i-1).*Ny:i*Ny-1
+# 		y[idx] = y_in[idx] .* (1/h)
+# 	end
 
-	return y
+# 	return y
 
-end
+# end
 
-function Hx(y_in, Nx, Ny, h)
-	N = Nx*Ny
-        y = zeros(N)
+# function Hx(y_in, Nx, Ny, h)
+# 	N = Nx*Ny
+#         y = zeros(N)
 
-        idx = 1:Ny
-	y[idx] = h .* (1/2)*y_in[idx]
+#         idx = 1:Ny
+# 	y[idx] = h .* (1/2)*y_in[idx]
 
-        idx = Ny+1:N-Ny
-        y[idx] = h .* 1*y_in[idx]
+#         idx = Ny+1:N-Ny
+#         y[idx] = h .* 1*y_in[idx]
 
-        idx = N-Ny+1:N
-	y[idx] = h .* (1/2)*y_in[idx]
+#         idx = N-Ny+1:N
+# 	y[idx] = h .* (1/2)*y_in[idx]
 
-        return y
+#         return y
 
 
-end
+# end
 
-function Hy(y_in, Nx, Ny, h)
-	N = Nx*Ny
-        y = zeros(N)
+# function Hy(y_in, Nx, Ny, h)
+# 	N = Nx*Ny
+#         y = zeros(N)
 
-        idx = 1:Ny:N-Ny+1
-	y[idx] = h .* (1/2)*y_in[idx]
+#         idx = 1:Ny:N-Ny+1
+# 	y[idx] = h .* (1/2)*y_in[idx]
 
-        idx = Ny:Ny:N
-	y[idx] = h .* (1/2)*y_in[idx]
+#         idx = Ny:Ny:N
+# 	y[idx] = h .* (1/2)*y_in[idx]
 
-        for i = 1:Nx
-                idx = 2+(i-1).*Ny:i*Ny-1
-                y[idx] = h .* y_in[idx]
-        end
+#         for i = 1:Nx
+#                 idx = 2+(i-1).*Ny:i*Ny-1
+#                 y[idx] = h .* y_in[idx]
+#         end
 
-        return y
+#         return y
 
-end
+# end
 
-function BxSx_tran(y_in, Nx, Ny, h)
-	N = Nx*Ny
-	y = zeros(N)
+# function BxSx_tran(y_in, Nx, Ny, h)
+# 	N = Nx*Ny
+# 	y = zeros(N)
 
-	idx1 = 1:Ny
-	y[idx1] += (1.5 .* y_in[idx1]) .* (1/h)
-	idx = Ny+1:2*Ny
-	y[idx] += (-2 .* y_in[idx1]) .* (1/h)
-	idx  = 2*Ny+1:3*Ny
-	y[idx] += (0.5 .* y_in[idx1]) .* (1/h)
+# 	idx1 = 1:Ny
+# 	y[idx1] += (1.5 .* y_in[idx1]) .* (1/h)
+# 	idx = Ny+1:2*Ny
+# 	y[idx] += (-2 .* y_in[idx1]) .* (1/h)
+# 	idx  = 2*Ny+1:3*Ny
+# 	y[idx] += (0.5 .* y_in[idx1]) .* (1/h)
 
-	idxN = N-Ny+1:N
-	y[idxN] += (1.5 .* y_in[idxN]) .* (1/h)
-	idx = N-2*Ny+1:N-Ny
-	y[idx] += (-2 .* y_in[idxN]) .* (1/h)
-	idx = N-3*Ny+1:N-2*Ny
-	y[idx] += (0.5 .* y_in[idxN]) .* (1/h)
+# 	idxN = N-Ny+1:N
+# 	y[idxN] += (1.5 .* y_in[idxN]) .* (1/h)
+# 	idx = N-2*Ny+1:N-Ny
+# 	y[idx] += (-2 .* y_in[idxN]) .* (1/h)
+# 	idx = N-3*Ny+1:N-2*Ny
+# 	y[idx] += (0.5 .* y_in[idxN]) .* (1/h)
 
-	return y
-end
+# 	return y
+# end

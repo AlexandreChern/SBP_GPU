@@ -3,7 +3,7 @@ using Printf
 using StaticArrays
 using GPUifyLoops: @unroll
 
-include("deriv_ops.jl")
+# include("deriv_ops.jl")
 
 ###
 # y_in: input GPU array
