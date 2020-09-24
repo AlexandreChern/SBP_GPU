@@ -33,7 +33,7 @@
 ##
 
 
-function D2x_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function D2x_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 	#N = Nx*Ny
 	#hx = Float64(1/(Nx-1))
 	#hy = Float64(1/(Ny-1))
@@ -50,12 +50,12 @@ function D2x_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Fl
 	@inbounds for idx2 = N-Ny+1:N
 		y_out[idx2] = (y_in[idx2 - 2*Ny] -2 * y_in[idx2 - Ny] + y_in[idx2]) / hx^2
 	end
-	return y_out
+	# return y_out
 end
 
 
 
-function D2y_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function D2y_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 	#N = Nx*Ny
 	#hx = Float64(1/(Nx-1))
 	#hy = Float64(1/(Ny-1))
@@ -73,7 +73,7 @@ function D2y_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Fl
 		end
 	end
 
-	return y_out
+	# return y_out
 
 end
 
@@ -81,7 +81,7 @@ end
 
 
 
-function Dx_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Dx_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 
 	@inbounds for idx = 1:Ny
 		y_out[idx] = (y_in[idx + Ny] - y_in[idx]) / hx
@@ -94,13 +94,13 @@ function Dx_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Flo
 	@inbounds for idx2 = N-Ny+1:N
 		y_out[idx2] = (y_in[idx2]-y_in[idx2 .- Ny]) ./ hx
 	end
-	return y_out
+	# return y_out
 end
 
 
 
 
-function Dy_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Dy_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 
 	@inbounds for idx = 1:Ny:N-Ny+1
 		y_out[idx] = (y_in[idx + 1] - y_in[idx]) / h
@@ -115,12 +115,12 @@ function Dy_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Flo
 		 	y_out[idx] = (y_in[idx + 1] - y_in[idx - 1]) / (2*h)
 		end
 	end
-	return y_out
+	# return y_out
 end
 
 
 
-function Hxinv_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Hxinv_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 	#N = Nx*Ny
 	#y = similar(y_in)
 	@inbounds for idx = 1:Ny
@@ -135,12 +135,12 @@ function Hxinv_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::
 		y_out[idx2] = (2*y_in[idx2]) * (1/hx)
 	end
 
-	return y_out
+	# return y_out
 end
 
 
 
-function Hyinv_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Hyinv_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 	#N = Nx*Ny
 	#y = similar(y_in)
 	#hx = Float64(1/(Nx-1))
@@ -158,12 +158,12 @@ function Hyinv_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::
 			y_out[idx2] = (y_in[idx2]) * (1/hy)
 		end
 	end
-	return y_out
+	# return y_out
 end
 
 
 
-function Hx_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Hx_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 	@inbounds for idx = 1:Ny
 		y_out[idx] = hx*y_in[idx]/2
 	end
@@ -175,12 +175,12 @@ function Hx_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Flo
 	@inbounds for idx2 = N-Ny+1:N
 		y_out[idx2] = hx*y_in[idx2]/2
 	end
-	return y_out
+	# return y_out
 end
 
 
 
-function Hy_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Hy_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
 	#N = Nx*Ny
 	#y = similar(y_in)
 
@@ -197,12 +197,12 @@ function Hy_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Flo
 			y_out[idx2] = hy*y_in[idx2]
 		end
 	end
-	return y_out
+	# return y_out
 end
 
 
 
-function FACEtoVOL_beta(y_in_face::Array{Float64,1}, face::Int64, Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1})
+function FACEtoVOL_beta!(y_in_face::Array{Float64,1}, face::Int64, Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1})
 	if face == 1
 		idx = 1:Ny:N-Ny+1
 	elseif face==2
@@ -215,12 +215,12 @@ function FACEtoVOL_beta(y_in_face::Array{Float64,1}, face::Int64, Nx::Int64, Ny:
 	end
 	y_out = y_outs[face]
 	y_out[idx] = y_in_face
-	return y_out
+	# return y_out
 end
 
 
 
-function VOLtoFACE_beta(y_in::Array{Float64,1},face::Int64,Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1}) ## Has some issue
+function VOLtoFACE_beta!(y_in::Array{Float64,1},face::Int64,Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1}) ## Has some issue
 	if face == 1
 			idx = 1:Ny:N-Ny+1
 	elseif face == 2
@@ -234,11 +234,11 @@ function VOLtoFACE_beta(y_in::Array{Float64,1},face::Int64,Nx::Int64, Ny::Int64,
     y_out = y_outs[face]
 	y_out[idx] = y_in[idx]
 
-	return y_out
+	# return y_out
 end
 
 
-function Bx_beta(Nx::Int64,Ny::Int64, N::Int64, y_out::Array{Float64,1})
+function Bx_beta!(Nx::Int64,Ny::Int64, N::Int64, y_out::Array{Float64,1})
 
 	@inbounds for idx=1:Ny
 		y_out[idx] = -1
@@ -247,11 +247,11 @@ function Bx_beta(Nx::Int64,Ny::Int64, N::Int64, y_out::Array{Float64,1})
 	@inbounds for idx = N-Ny+1:N
 		y_out[idx] = 1
 	end
-	return y_out
+	# return y_out
 end
 
 
-function By_beta(Nx::Int64,Ny::Int64,N::Int64,y_By::Array{Float64,1})
+function By_beta!(Nx::Int64,Ny::Int64,N::Int64,y_By::Array{Float64,1})
 	@inbounds for idx = 1:Ny:N-Ny+1
 		y_By[idx] = -1
 	end
@@ -259,20 +259,20 @@ function By_beta(Nx::Int64,Ny::Int64,N::Int64,y_By::Array{Float64,1})
 	@inbounds for idx1 = Ny:Ny:N
 		y_By[idx1] = 1
 	end
-	return y_By
+	# return y_By
 end
 
 
-function BxSx_beta(y_in::Array{Float64,1},Nx::Int64,Ny::Int64,N::Int64,hx::Float64,hy::Float64,y_out::Array{Float64,1})
+function BxSx_beta!(y_in::Array{Float64,1},Nx::Int64,Ny::Int64,N::Int64,hx::Float64,hy::Float64,y_out::Array{Float64,1})
 	@inbounds for idx = 1:Ny
 		y_out[idx] = (1/hx) * (1.5 * y_in[idx] - 2 * y_in[idx + Ny] + 0.5 * y_in[idx + 2*Ny])
 		y_out[N-Ny + idx] = (1/hx) * (0.5 * y_in[N-3*Ny + idx] - 2 * y_in[N-2*Ny + idx] + 1.5 * y_in[N-Ny + idx])
 	end
-	return y_out
+	# return y_out
 end
 
 
-function BySy_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64,y_out::Array{Float64,1})
+function BySy_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64,y_out::Array{Float64,1})
 	@inbounds for idx = 1:Ny:N-Ny+1
 		y_out[idx] = (1/hy) * (1.5 * y_in[idx] - 2 * y_in[idx .+ 1] + 0.5 * y_in[idx .+ 2])
 	end
@@ -281,12 +281,12 @@ function BySy_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::F
 		y_out[idx] = (1/hy) * (0.5 * y_in[idx - 2] - 2 * y_in[idx - 1] + 1.5 * y_in[idx])
 	end
 
-	return y_out
+	# return y_out
 end
 
 
 
-function BxSx_tran_beta(y_in::Array{Float64,1},Nx::Int64,Ny::Int64,N::Int64,hx::Float64,hy::Float64,y_out::Array{Float64,1}) # be careful with += expression
+function BxSx_tran_beta!(y_in::Array{Float64,1},Nx::Int64,Ny::Int64,N::Int64,hx::Float64,hy::Float64,y_out::Array{Float64,1}) # be careful with += expression
 	#hx = Float64(1/(Nx-1))
    	#hy = Float64(1/(Ny-1))
 	@inbounds for idx1 = 1:Ny
@@ -313,13 +313,13 @@ function BxSx_tran_beta(y_in::Array{Float64,1},Nx::Int64,Ny::Int64,N::Int64,hx::
 		y_out[idxN-2Ny] = (0.5 * y_in[idxN]) * (1/hx)
 		# end
 	end
-	return y_out
+	# return y_out
 end
 
 
 
 
-function BySy_tran_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1}) # Be Careful about double foor loops
+function BySy_tran_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1}) # Be Careful about double foor loops
 	@inbounds for idx1 = 1:Ny:N-Ny+1
 		y_out[idx1] = (1.5 * y_in[idx1]) * (1/hy)
 
@@ -345,7 +345,7 @@ function BySy_tran_beta(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, 
 		# end
 	end
 
-	return y_out
+	# return y_out
 end
 
 
@@ -370,7 +370,7 @@ end
 
 # 	y[idx] = u_face
 
-# 	return y
+# 	# return y
 
 # end
 
@@ -390,7 +390,7 @@ end
 #         end
 
 # 	y[idx] = y_in[idx]
-#         return y
+#         # return y
 # end
 
 # function Hxinv(y_in, Nx, Ny, h)
@@ -406,7 +406,7 @@ end
 # 	idx = N-Ny+1:N
 # 	y[idx] = (2*y_in[idx]) .* (1/h)
 
-# 	return y
+# 	# return y
 # end
 
 # function Hyinv(y_in, Nx, Ny, h)
@@ -424,7 +424,7 @@ end
 # 		y[idx] = y_in[idx] .* (1/h)
 # 	end
 
-# 	return y
+# 	# return y
 
 # end
 
@@ -441,7 +441,7 @@ end
 #         idx = N-Ny+1:N
 # 	y[idx] = h .* (1/2)*y_in[idx]
 
-#         return y
+#         # return y
 
 
 # end
@@ -461,7 +461,7 @@ end
 #                 y[idx] = h .* y_in[idx]
 #         end
 
-#         return y
+#         # return y
 
 # end
 
@@ -483,5 +483,5 @@ end
 # 	idx = N-3*Ny+1:N-2*Ny
 # 	y[idx] += (0.5 .* y_in[idxN]) .* (1/h)
 
-# 	return y
+# 	# return y
 # end
