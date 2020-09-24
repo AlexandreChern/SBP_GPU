@@ -7,6 +7,7 @@ version = "0.1.0"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 GPUifyLoops = "ba82f77b-6841-5d2e-bd9f-4daf811aec27"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]

@@ -16,5 +16,6 @@ export Bx_beta, BxSx_beta, BxSx_tran_beta, By_beta, BySy_beta, BySy_tran_beta, D
 export Bx_GPU_shared, BxSx_GPU_shared, By_GPU_shared, BySy_GPU_shared, BySy_tran_GPU_shared, D2x_GPU_shared, D2y_GPU_shared, Dx_GPU_shared, Dy_GPU_shared, Hx_GPU_shared, Hxinv_GPU_shared, Hy_GPU_shared
 
 export tester_function, tester_function_v2, tester_function_v3
+export D2x_GPU, Dx_GPU
 
 end

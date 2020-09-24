@@ -9,27 +9,40 @@ using GPUifyLoops: @unroll
 # y_in: input GPU array
 # y_out: output GPU array
 ###
-function D2x_GPU(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
-	tidx = (blockIdx().x - 1) * TILE_DIM + threadIdx().x
-	N = Nx*Ny
-	# y_out = zeros(N)
-	if tidx <= Ny
-		y_out[tidx] = (y_in[tidx] - 2 * y_in[Ny + tidx] + y_in[2*Ny + tidx]) / h^2
-	end
-	sync_threads()
 
-	if Ny+1 <= tidx <= N-Ny
-		y_out[tidx] = (y_in[tidx - Ny] - 2 .* y_in[tidx] + y_in[tidx + Ny]) / h^2
-	end
+# function D2x_GPU(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
+# 	tidx = (blockIdx().x - 1) * TILE_DIM + threadIdx().x
+# 	N = Nx*Ny
+# 	# y_out = zeros(N)
+# 	if tidx <= Ny
+# 		y_out[tidx] = (y_in[tidx] - 2 * y_in[Ny + tidx] + y_in[2*Ny + tidx]) / h^2
+# 	end
+# 	sync_threads()
 
-	sync_threads()
+# 	if Ny+1 <= tidx <= N-Ny
+# 		y_out[tidx] = (y_in[tidx - Ny] - 2 .* y_in[tidx] + y_in[tidx + Ny]) / h^2
+# 	end
 
-	if N-Ny+1 <= tidx <= N
-		y_out[tidx] = (y_in[tidx - 2*Ny] -2 * y_in[tidx - Ny] + y_in[tidx]) / h^2
-	end
-	sync_threads()
+# 	sync_threads()
 
-	nothing
+# 	if N-Ny+1 <= tidx <= N
+# 		y_out[tidx] = (y_in[tidx - 2*Ny] -2 * y_in[tidx - Ny] + y_in[tidx]) / h^2
+# 	end
+# 	sync_threads()
+
+# 	nothing
+# end
+
+function D2x_GPU(y_in::CuArray,y_out::CuArray,Nx,Ny)
+	y_out = similar(y_in)
+	TILE_DIM_1 = 4
+	TILE_DIM_2 = 16
+	h = 1/Nx
+	griddim = (div(Nx,TILE_DIM_1) + 1, div(Ny,TILE_DIM_2) + 1)
+	blockdim = (TILE_DIM_1,TILE_DIM_2)
+	@cuda threads=blockdim blocks=griddim D2x_GPU_shared(y_in, y_out, Nx, Ny, h, Val(TILE_DIM_1), Val(TILE_DIM_2))
+	synchronize();
+	return y_out
 end
 
 function D2x_GPU_shared(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM1}, ::Val{TILE_DIM2}) where {TILE_DIM1, TILE_DIM2}
@@ -106,6 +119,18 @@ function D2x_GPU_shared(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM1}, ::Val{TILE_DIM
     sync_threads()
     
     nothing
+end
+
+function Dx_GPU(y_in::CuArray,y_out::CuArray,Nx,Ny)
+	y_out = similar(y_in)
+	TILE_DIM_1 = 4
+	TILE_DIM_2 = 16
+	h = 1/Nx
+	griddim = (div(Nx,TILE_DIM_1) + 1, div(Ny,TILE_DIM_2) + 1)
+	blockdim = (TILE_DIM_1,TILE_DIM_2)
+	@cuda threads=blockdim blocks=griddim Dx_GPU_shared(y_in, y_out, Nx, Ny, h, Val(TILE_DIM_1), Val(TILE_DIM_2))
+	synchronize();
+	return y_out
 end
 
 function Dx_GPU_shared(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM1}, ::Val{TILE_DIM2}) where {TILE_DIM1, TILE_DIM2}
