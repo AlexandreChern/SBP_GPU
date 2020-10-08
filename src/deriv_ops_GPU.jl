@@ -1239,7 +1239,7 @@ function tester_function(f,Nx,TILE_DIM_1,TILE_DIM_2,TILE_DIM)
 	@show f
 	@eval gpu_function_naive = $(Symbol(f,"_GPU_naive"))
 	@eval gpu_function_shared = $(Symbol(f,"_GPU_shared"))
-	@show gpu_function
+	@show gpu_function_naive
     @show gpu_function_shared
     h = 1/Nx
 	# TILE_DIM_1 = 16

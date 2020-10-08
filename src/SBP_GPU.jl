@@ -17,5 +17,6 @@ export Bx_GPU_shared, BxSx_GPU_shared, By_GPU_shared, BySy_GPU_shared, BySy_tran
 
 export tester_function, tester_function_v2, tester_function_v3
 export D2x_GPU, Dx_GPU
+export D2x_GPU_naive, D2y_GPU_naive
 
 end
