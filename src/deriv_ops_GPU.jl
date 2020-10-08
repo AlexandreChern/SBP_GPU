@@ -1262,7 +1262,7 @@ function tester_function(f,Nx,TILE_DIM_1,TILE_DIM_2,TILE_DIM)
     @cuda threads=blockdim blocks=griddim gpu_function_shared(y_in, y_out2, Nx, Ny, h, Val(TILE_DIM_1), Val(TILE_DIM_2))
 	@show y ≈ Array(y_out)
 	@show y ≈ Array(y_out2)
-	@show y - Array(y_out2)
+    #@show y - Array(y_out2)
 	
 	rep_times = 10
 
@@ -1282,7 +1282,7 @@ function tester_function(f,Nx,TILE_DIM_1,TILE_DIM_2,TILE_DIM)
 
 	t_y_out = time_ns()
 	for i in 1:rep_times
-		@cuda threads=THREAD_NUM blocks=BLOCK_NUM gpu_function(y_in, y_out, Nx, Ny, h, Val(TILE_DIM))
+		@cuda threads=THREAD_NUM blocks=BLOCK_NUM gpu_function_naive(y_in, y_out, Nx, Ny, h, Val(TILE_DIM))
 		# @cuda threads=THREAD_NUM blocks=BLOCK_NUM D2y_GPU_v2(y_in, y_out, Nx, Ny, h, Val(TILE_DIM))
 	end
 	synchronize()
