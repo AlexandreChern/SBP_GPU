@@ -10,28 +10,28 @@ using GPUifyLoops: @unroll
 # y_out: output GPU array
 ###
 
-# function D2x_GPU(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
-# 	tidx = (blockIdx().x - 1) * TILE_DIM + threadIdx().x
-# 	N = Nx*Ny
-# 	# y_out = zeros(N)
-# 	if tidx <= Ny
-# 		y_out[tidx] = (y_in[tidx] - 2 * y_in[Ny + tidx] + y_in[2*Ny + tidx]) / h^2
-# 	end
-# 	sync_threads()
+function D2x_GPU_naive(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
+	tidx = (blockIdx().x - 1) * TILE_DIM + threadIdx().x
+	N = Nx*Ny
+	# y_out = zeros(N)
+	if tidx <= Ny
+		y_out[tidx] = (y_in[tidx] - 2 * y_in[Ny + tidx] + y_in[2*Ny + tidx]) / h^2
+	end
+	sync_threads()
 
-# 	if Ny+1 <= tidx <= N-Ny
-# 		y_out[tidx] = (y_in[tidx - Ny] - 2 .* y_in[tidx] + y_in[tidx + Ny]) / h^2
-# 	end
+	if Ny+1 <= tidx <= N-Ny
+		y_out[tidx] = (y_in[tidx - Ny] - 2 .* y_in[tidx] + y_in[tidx + Ny]) / h^2
+	end
 
-# 	sync_threads()
+	sync_threads()
 
-# 	if N-Ny+1 <= tidx <= N
-# 		y_out[tidx] = (y_in[tidx - 2*Ny] -2 * y_in[tidx - Ny] + y_in[tidx]) / h^2
-# 	end
-# 	sync_threads()
+	if N-Ny+1 <= tidx <= N
+		y_out[tidx] = (y_in[tidx - 2*Ny] -2 * y_in[tidx - Ny] + y_in[tidx]) / h^2
+	end
+	sync_threads()
 
-# 	nothing
-# end
+	nothing
+end
 
 function D2x_GPU(y_in::CuArray,y_out::CuArray,Nx,Ny)
 	y_out = similar(y_in)
@@ -355,7 +355,7 @@ function Hx_GPU_shared(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM1}, ::Val{TILE_DIM2
     nothing
 end
 
-function D2y_GPU(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
+function D2y_GPU_naive(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
 	tidx = (blockIdx().x - 1) * TILE_DIM + threadIdx().x
 	N = Nx*Ny
 	if 2 <= tidx <= N-1
@@ -1237,7 +1237,7 @@ end
 function tester_function(f,Nx,TILE_DIM_1,TILE_DIM_2,TILE_DIM)
     Ny = Nx
 	@show f
-	@eval gpu_function = $(Symbol(f,"_GPU"))
+	@eval gpu_function_naive = $(Symbol(f,"_GPU_naive"))
 	@eval gpu_function_shared = $(Symbol(f,"_GPU_shared"))
 	@show gpu_function
     @show gpu_function_shared
@@ -1258,7 +1258,7 @@ function tester_function(f,Nx,TILE_DIM_1,TILE_DIM_2,TILE_DIM)
     BLOCK_NUM = div(Nx * Ny,TILE_DIM)+1 
     
 	y = f(u,Nx,Ny,h)
-	@cuda threads=THREAD_NUM blocks=BLOCK_NUM gpu_function(y_in, y_out, Nx, Ny, h, Val(TILE_DIM))
+	@cuda threads=THREAD_NUM blocks=BLOCK_NUM gpu_function_naive(y_in, y_out, Nx, Ny, h, Val(TILE_DIM))
     @cuda threads=blockdim blocks=griddim gpu_function_shared(y_in, y_out2, Nx, Ny, h, Val(TILE_DIM_1), Val(TILE_DIM_2))
 	@show y ≈ Array(y_out)
 	@show y ≈ Array(y_out2)
