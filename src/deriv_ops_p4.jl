@@ -64,22 +64,36 @@ function D2y_p4(y_in, Nx, Ny, h)
 end
 
 function Dx_p4(y_in, Nx, Ny, h)
+	d  = [1/12 -2/3 0 2/3 -1/12]
+    bd = [-24/17  59/34  -4/17  -3/34  0     0;
+           -1/2    0      1/2    0     0     0;
+            4/43 -59/86   0     59/86 -4/43  0;
+            3/98   0    -59/98   0    32/49 -4/49]
 	N = Nx*Ny
 	y_out = zeros(N)
 
-	idx = 1:Ny
-	y_out[idx] = (y_in[idx .+ Ny] - y_in[idx]) ./ h
+	for row_num = 1:size(bd)[1]
+		idx = 1:Ny .+ (row_num - 1)*Ny
+		y_out[idx] = (bd[row_num,1] * y_in[idx] + bd[row_num,2] * y_in[idx .+ Ny*(2-1)] + bd[row_num,3] * y[idx .+ Ny*(3-1)] + bd[row_num,4] * y[idx .+ Ny*(4-1)] + bd[row_num,5] * y[idx .+ Ny*(5-1)] + bd[row_num,6] * y[idx .+ Ny*(6-1)]) ./ h
+	end
 
-	idx1 = Ny+1:N-Ny
+	idx1 = row_num*Ny+1:N-row_num*Ny
 	y_out[idx1] = (y_in[idx1 .+ Ny]-y_in[idx1 .- Ny]) ./ (2*h)
 
-	idx2 = N-Ny+1:N
-	y_out[idx2] = (y_in[idx2]-y_in[idx2 .- Ny]) ./ h
+	for row_num = 1:size(bd)[1]
+		idx2 = N-Ny+1:N .- (row_num - 1)*Ny
+		y_out[idx2] = -(bd[row_num,1] * y_in[idx2] + bd[row_num,2] * y_in[idx2 .- Ny*(2-1)] + bd[row_num,3] * y[idx2 .- Ny*(3-1)] + bd[row_num,3]*y[idx2 .- Ny*(4-1)] + bd[row_num,5] * y[idx .- Ny*(5-1)] + bd[row_num,6] * y[idx .- Ny*(6-1)]) ./ h
+	end
 
 	return y_out
 end
 
 function Dy_p4(y_in, Nx, Ny, h)
+	d  = [1/12 -2/3 0 2/3 -1/12]
+    bd = [-24/17  59/34  -4/17  -3/34  0     0;
+           -1/2    0      1/2    0     0     0;
+            4/43 -59/86   0     59/86 -4/43  0;
+            3/98   0    -59/98   0    32/49 -4/49]
 	N = Nx*Ny
 	y_out = zeros(N)
 
