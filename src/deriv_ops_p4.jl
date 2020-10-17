@@ -74,15 +74,15 @@ function Dx_p4(y_in, Nx, Ny, h)
 
 	for row_num = 1:size(bd)[1]
 		idx = 1:Ny .+ (row_num - 1)*Ny
-		y_out[idx] = (bd[row_num,1] * y_in[idx] + bd[row_num,2] * y_in[idx .+ Ny*(2-1)] + bd[row_num,3] * y[idx .+ Ny*(3-1)] + bd[row_num,4] * y[idx .+ Ny*(4-1)] + bd[row_num,5] * y[idx .+ Ny*(5-1)] + bd[row_num,6] * y[idx .+ Ny*(6-1)]) ./ h
+		y_out[idx] = (bd[row_num,1] * y_in[idx] + bd[row_num,2] * y_in[idx .+ Ny*(2-1)] + bd[row_num,3] * y_in[idx .+ Ny*(3-1)] + bd[row_num,4] * y_in[idx .+ Ny*(4-1)] + bd[row_num,5] * y_in[idx .+ Ny*(5-1)] + bd[row_num,6] * y_in[idx .+ Ny*(6-1)]) ./ h
 	end
 
-	idx1 = row_num*Ny+1:N-row_num*Ny
-	y_out[idx1] = (y_in[idx1 .+ Ny]-y_in[idx1 .- Ny]) ./ (2*h)
+	idx1 = (size(bd)[1])*Ny+1:N-(size(bd)[1])*Ny
+	y_out[idx1] = (d[1]*y_in[idx1 .- 2*Ny] + d[2]*y_in[idx1 .- Ny] + d[3]*y_in[idx1] + d[4]*y_in[idx1 .+ Ny] + d[y] * y_in[idx1 .- 2*Ny]) / (h)
 
 	for row_num = 1:size(bd)[1]
 		idx2 = N-Ny+1:N .- (row_num - 1)*Ny
-		y_out[idx2] = -(bd[row_num,1] * y_in[idx2] + bd[row_num,2] * y_in[idx2 .- Ny*(2-1)] + bd[row_num,3] * y[idx2 .- Ny*(3-1)] + bd[row_num,3]*y[idx2 .- Ny*(4-1)] + bd[row_num,5] * y[idx .- Ny*(5-1)] + bd[row_num,6] * y[idx .- Ny*(6-1)]) ./ h
+		y_out[idx2] = -(bd[row_num,1] * y_in[idx2] + bd[row_num,2] * y_in[idx2 .- Ny*(2-1)] + bd[row_num,3] * y_in[idx2 .- Ny*(3-1)] + bd[row_num,3]*y_in[idx2 .- Ny*(4-1)] + bd[row_num,5] * y_in[idx .- Ny*(5-1)] + bd[row_num,6] * y_in[idx .- Ny*(6-1)]) ./ h
 	end
 
 	return y_out
