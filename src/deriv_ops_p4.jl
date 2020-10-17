@@ -73,16 +73,16 @@ function Dx_p4(y_in, Nx, Ny, h)
 	y_out = zeros(N)
 
 	for row_num = 1:size(bd)[1]
-		idx = 1:Ny .+ (row_num - 1)*Ny
-		y_out[idx] = (bd[row_num,1] * y_in[idx] + bd[row_num,2] * y_in[idx .+ Ny*(2-1)] + bd[row_num,3] * y_in[idx .+ Ny*(3-1)] + bd[row_num,4] * y_in[idx .+ Ny*(4-1)] + bd[row_num,5] * y_in[idx .+ Ny*(5-1)] + bd[row_num,6] * y_in[idx .+ Ny*(6-1)]) ./ h
+		idx = (row_num - 1)*Ny+1:(row_num)*Ny
+		y_out[idx] = (bd[row_num,1] * y_in[idx .+ (1 - row_num)*Ny] + bd[row_num,2] * y_in[idx .+ Ny*(2-row_num)] + bd[row_num,3] * y_in[idx .+ Ny*(3-row_num)] + bd[row_num,4] * y_in[idx .+ Ny*(4-row_num)] + bd[row_num,5] * y_in[idx .+ Ny*(5-row_num)] + bd[row_num,6] * y_in[idx .+ Ny*(6-row_num)]) ./ h
 	end
 
 	idx1 = (size(bd)[1])*Ny+1:N-(size(bd)[1])*Ny
-	y_out[idx1] = (d[1]*y_in[idx1 .- 2*Ny] + d[2]*y_in[idx1 .- Ny] + d[3]*y_in[idx1] + d[4]*y_in[idx1 .+ Ny] + d[5] * y_in[idx1 .+ 2*Ny]) / (h)
+	y_out[idx1] = (d[1]*y_in[idx1 .- 2*Ny] + d[2]*y_in[idx1 .- Ny] + d[3]*y_in[idx1] + d[4]*y_in[idx1 .+ Ny] + d[5] * y_in[idx1 .+ 2*Ny]) ./ (h)
 
 	for row_num = 1:size(bd)[1]
 		idx2 = N-(row_num)*Ny+1:N .- (row_num - 1)*Ny
-		y_out[idx2] = -(bd[row_num,1] * y_in[idx2] + bd[row_num,2] * y_in[idx2 .- Ny*(2-1)] + bd[row_num,3] * y_in[idx2 .- Ny*(3-1)] + bd[row_num,3]*y_in[idx2 .- Ny*(4-1)] + bd[row_num,5] * y_in[idx2 .- Ny*(5-1)] + bd[row_num,6] * y_in[idx2 .- Ny*(6-1)]) ./ h
+		y_out[idx2] = -(bd[row_num,1] * y_in[idx2 .+ (row_num - 1)*Ny] + bd[row_num,2] * y_in[idx2 .- Ny*(2-row_num)] + bd[row_num,3] * y_in[idx2 .- Ny*(3-row_num)] + bd[row_num,4]*y_in[idx2 .- Ny*(4-row_num)] + bd[row_num,5] * y_in[idx2 .- Ny*(5-row_num)] + bd[row_num,6] * y_in[idx2 .- Ny*(6-row_num)]) ./ h
 	end
 
 	return y_out
