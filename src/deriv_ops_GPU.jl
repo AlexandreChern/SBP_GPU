@@ -121,6 +121,34 @@ function D2x_GPU_shared(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM1}, ::Val{TILE_DIM
     nothing
 end
 
+function D2x_GPU_p4_naive(y_in, y_out, Nx, Ny, h, ::Val{TILE_DIM}) where {TILE_DIM}
+	d = [1/12 -2/3 0 2/3 -1/12]
+	bd = [-24/17  59/34  -4/17  -3/34  0     0;
+	-1/2    0      1/2    0     0     0;
+	 4/43 -59/86   0     59/86 -4/43  0;
+	 3/98   0    -59/98   0    32/49 -4/49]
+	tidx = (blockIdx().x - 1) * TILE_DIM + threadIdx().x
+	N = Nx*Ny
+	# y_out = zeros(N)
+	if tidx <= Ny
+		y_out[tidx] = (y_in[tidx] - 2 * y_in[Ny + tidx] + y_in[2*Ny + tidx]) / h^2
+	end
+	sync_threads()
+
+	if Ny+1 <= tidx <= N-Ny
+		y_out[tidx] = (y_in[tidx - Ny] - 2 .* y_in[tidx] + y_in[tidx + Ny]) / h^2
+	end
+
+	sync_threads()
+
+	if N-Ny+1 <= tidx <= N
+		y_out[tidx] = (y_in[tidx - 2*Ny] -2 * y_in[tidx - Ny] + y_in[tidx]) / h^2
+	end
+	sync_threads()
+
+	nothing
+end
+
 function Dx_GPU(y_in::CuArray,y_out::CuArray,Nx,Ny)
 	y_out = similar(y_in)
 	TILE_DIM_1 = 4
