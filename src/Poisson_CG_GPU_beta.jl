@@ -230,6 +230,32 @@ function myMAT_beta!(du::AbstractVector, u::AbstractVector,variable,intermediate
     return intermediate.du
 end
 
+function myMAT_beta_no_return!(du::AbstractVector, u::AbstractVector,variable,intermediate)
+    D2x_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_x)
+    D2y_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_y)
+
+    intermediate.du_ops .= intermediate.du_x + intermediate.du_y
+    BySy_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du1)
+    VOLtoFACE_beta!(intermediate.du1,1,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    Hyinv_beta!(intermediate.Vol2Face[1],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha1,intermediate.du3)     #compute action of P1  .= for faster assignment
+
+    VOLtoFACE_beta!(intermediate.du1,2,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    Hyinv_beta!(intermediate.Vol2Face[2],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy, variable.alpha2,intermediate.du6)
+    
+    #compute action of P2
+    VOLtoFACE_beta!(u,3,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    BxSx_tran_beta!(intermediate.Vol2Face[3],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du8)
+    Hxinv_beta!(intermediate.du8,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy, variable.beta, intermediate.du9)
+    Hxinv_beta!(intermediate.Vol2Face[3],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha3,intermediate.du11)   #compute action of P3
+
+    VOLtoFACE_beta!(u,4,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    BxSx_tran_beta!(intermediate.Vol2Face[4],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du13)
+    Hxinv_beta!(intermediate.du13,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.beta,intermediate.du14)
+    Hxinv_beta!(intermediate.Vol2Face[4],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha4,intermediate.du16)  #compute action of P4
+    intermediate.du0 .= intermediate.du_ops .+ intermediate.du3 .+ intermediate.du6 .+ intermediate.du9 .+ intermediate.du11 .+ intermediate.du14 .+ intermediate.du16 #Collect together
+    Hy_beta!(intermediate.du0,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du17)
+	Hx_beta!(intermediate.du17,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy, -1.0,intermediate.du)
+end
 
 function Generate(variable)
     # @unpack Nx,Ny,N,hx,hy,x,y,alpha1,alpha2,alpha3,alpha4,beta = var
@@ -348,9 +374,9 @@ function conjugate_beta(myMAT_beta!,r,b,variable,intermediate,maxIteration)
     # @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
     # @unpack du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
 
-    N = variable.N
-    u = zeros(N);
-    du = zeros(N);
+    # N = variable.N
+    u = zeros(variable.N);
+    du = zeros(variable.N);
     tol = 1e-16
 
     r .= b .- myMAT_beta!(du,u,variable,intermediate)
@@ -366,6 +392,47 @@ function conjugate_beta(myMAT_beta!,r,b,variable,intermediate,maxIteration)
         axpy!(alpha,p,u) # BLAS function
         #r = r - alpha * Ap
         axpy!(-alpha,Ap,r)
+        rsnew = r'*r
+        if sqrt(rsnew) < tol
+            break
+        end
+        #p = r + (rsnew/rsold) * p
+        #p .= r .+ (rsnew/rsold) .*p
+        p .= (rsnew/rsold) .* p .+ r
+
+        rsold = rsnew;
+        counts += 1
+        #return rsold;
+    end
+    return u, counts
+end
+
+function conjugate_beta_no_return(myMAT_beta_no_return!,r,b,variable,intermediate,maxIteration)
+    # @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
+    # @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
+    # @unpack du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
+
+    # N = variable.N
+    u = zeros(variable.N);
+    du = zeros(variable.N);
+    tol = 1e-16
+
+    # r .= b .- myMAT_beta!(du,u,variable,intermediate)
+    myMAT_beta!(du,u,variable,intermediate)
+    r .= b .- intermediate.du
+    p = copy(r)
+    Ap = similar(u)
+    rsold = r'*r
+    counts = 0
+    # maxIteration = 1000
+    for i = 1:maxIteration
+        # Ap .= myMAT_beta!(du,p,variable,intermediate)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
+        myMAT_beta!(du,p,variable,intermediate)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
+        alpha = rsold / (p'*intermediate.du)
+        #u = u + alpha * p
+        axpy!(alpha,p,u) # BLAS function
+        #r = r - alpha * Ap
+        axpy!(-alpha,intermediate.du,r)
         rsnew = r'*r
         if sqrt(rsnew) < tol
             break
@@ -432,14 +499,16 @@ end
 
 (u1,counts1) = conjugate_beta(myMAT_beta!,r,b,variable,intermediate,100)
 u1 = copy(u1)
-(u2,counts2) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,2000)
-u2 = copy(u2)
-(u3,counts3) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,3000)
-u3 = copy(u3)
-(u4,counts4) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,1000)
-u4 = copy(u4)
-(u5,counts5) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,1000)
-u5 = copy(u5)
+(u1_no_return, counts1_no_return) = conjugate_beta_no_return(myMAT_beta_no_return!,r,b,variable,intermediate,100)
+u1_no_return = copy(u1_no_return)
+# (u2,counts2) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,2000)
+# u2 = copy(u2)
+# (u3,counts3) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,3000)
+# u3 = copy(u3)
+# (u4,counts4) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,1000)
+# u4 = copy(u4)
+# (u5,counts5) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,1000)
+# u5 = copy(u5)
 
 counts1
 counts2
