@@ -105,9 +105,9 @@ iGm = intermediates_GPU_mutable(Nx,Ny,N,CuArray(zeros(N)),CuArray(zeros(N)),CuAr
 
 
 # function myMAT_beta_GPU!(du_GPU::AbstractVector, u_GPU::AbstractVector, container, var_test) # , intermediates_GPU_mutable)
-function myMAT_beta_GPU!(du_GPU::AbstractVector, u_GPU::AbstractVector, iGm, var_test) # , intermediates_GPU_mutable)
+function myMAT_beta_GPU!(du_GPU::AbstractVector, u_GPU::AbstractVector,variable , iGm) # , intermediates_GPU_mutable)
     # @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
-    @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
+    # @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
 
     # N = Nx*Ny
     # cu_zeros = CuArray(zeros(N))
@@ -128,20 +128,20 @@ function myMAT_beta_GPU!(du_GPU::AbstractVector, u_GPU::AbstractVector, iGm, var
     # @show griddim_x
     # @show size(u)
     # @show size(iGm.du_x)
-    @cuda threads=blockdim_x blocks=griddim_x D2x_GPU_shared(u_GPU,iGm.du_x, Nx, Ny, hx, Val(TILE_DIM_1), Val(TILE_DIM_2))
+    @cuda threads=blockdim_x blocks=griddim_x D2x_GPU_shared(u_GPU,iGm.du_x, variable.Nx, variable.Ny, variable.hx, Val(TILE_DIM_1), Val(TILE_DIM_2))
     # @show Array(iGm.du_x)
     # output = Array(iGm.du_x)
     # output_GPU = iGm.du_x
     synchronize()
-    @cuda threads=blockdim_y blocks=griddim_y D2y_GPU_shared(u_GPU,iGm.du_y, Nx, Ny, hy, Val(TILE_DIM_2), Val(TILE_DIM_1))
+    @cuda threads=blockdim_y blocks=griddim_y D2y_GPU_shared(u_GPU,iGm.du_y, variable.Nx, variable.Ny, variable.hy, Val(TILE_DIM_2), Val(TILE_DIM_1))
     synchronize()
     iGm.du_ops = iGm.du_x + iGm.du_y
     output2 = Array(du_ops)
-    @cuda threads=blockdim_y blocks=griddim_y BySy_GPU_shared(u_GPU,iGm.du1, Nx, Ny, hy, Val(TILE_DIM_2), Val(TILE_DIM_1))
+    @cuda threads=blockdim_y blocks=griddim_y BySy_GPU_shared(u_GPU,iGm.du1, variable.Nx, variable.Ny, variable.hy, Val(TILE_DIM_2), Val(TILE_DIM_1))
     # @show iGm.du_x
 
     synchronize()
-    iGm.du2 .= CuArray(VOLtoFACE_beta!(Array(iGm.du1),1,Nx,Ny,N,yv2fs))
+    iGm.du2 .= CuArray(VOLtoFACE_beta!(Array(iGm.du1),1,variable.Nx,variable.Ny,variable.N,yv2fs))
     @cuda threads=blockdim_y blocks=griddim_y Hyinv_GPU_shared(iGm.du2,iGm.du3,Nx,Ny,hy, Val(TILE_DIM_2), Val(TILE_DIM_1))
     synchronize()
     iGm.du3 = alpha1 * iGm.du3
@@ -451,8 +451,8 @@ end
 
 # function conjugate_beta_GPU(myMAT_beta_GPU!,r,b,container,var,intermediate,maxIteration)
 function conjugate_beta_GPU(myMAT_beta_GPU!,b,var,maxIteration)
-    @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
-    @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
+    # @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
+    # @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
     # @unpack du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
     iGm = intermediates_GPU_mutable(Nx,Ny,N,CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)));
     # u = zeros(N);
