@@ -206,7 +206,7 @@ function myMAT_beta!(du::AbstractVector, u::AbstractVector,variable,intermediate
     D2x_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_x)
     D2y_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_y)
 
-    intermediate.du_ops .= intermediate.du_x + intermediate.du_y
+    intermediate.du_ops .= intermediate.du_x .+ intermediate.du_y
     BySy_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du1)
     VOLtoFACE_beta!(intermediate.du1,1,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
     Hyinv_beta!(intermediate.Vol2Face[1],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha1,intermediate.du3)     #compute action of P1  .= for faster assignment
@@ -234,7 +234,7 @@ function myMAT_beta_no_return!(du::AbstractVector, u::AbstractVector,variable,in
     D2x_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_x)
     D2y_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_y)
 
-    intermediate.du_ops .= intermediate.du_x + intermediate.du_y
+    intermediate.du_ops .= intermediate.du_x .+ intermediate.du_y
     BySy_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du1)
     VOLtoFACE_beta!(intermediate.du1,1,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
     Hyinv_beta!(intermediate.Vol2Face[1],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha1,intermediate.du3)     #compute action of P1  .= for faster assignment
@@ -422,26 +422,37 @@ function conjugate_beta_no_return(myMAT_beta_no_return!,r,b,variable,intermediat
     r .= b .- intermediate.du
     p = copy(r)
     Ap = similar(u)
-    rsold = r'*r
+    rs = [0.0 0.0 0.0]
+    # rsold = r'*r
+    rs[1] = r'*r
     counts = 0
     # maxIteration = 1000
     for i = 1:maxIteration
         # Ap .= myMAT_beta!(du,p,variable,intermediate)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
         myMAT_beta!(du,p,variable,intermediate)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
-        alpha = rsold / (p'*intermediate.du)
+        # alpha = rsold / (p'*intermediate.du)
+        alpha = rs[1] / (p'*intermediate.du)
+        # rs[3] = rs[1] / (p'*intermediate.du)
         #u = u + alpha * p
         axpy!(alpha,p,u) # BLAS function
+        # axpy!(rs[3],p,u) # BLAS function
         #r = r - alpha * Ap
         axpy!(-alpha,intermediate.du,r)
-        rsnew = r'*r
-        if sqrt(rsnew) < tol
+        # axpy!(-rs[3],intermediate.du,r)
+        # rsnew = r'*r
+        rs[2] = r'*r
+        # if sqrt(rsnew) < tol
+        if sqrt(rs[2]) < tol
             break
         end
         #p = r + (rsnew/rsold) * p
         #p .= r .+ (rsnew/rsold) .*p
-        p .= (rsnew/rsold) .* p .+ r
+        # p .= (rsnew/rsold) .* p .+ r
+        p .= (rs[2]/rs[1]) .* p .+ r
+        # axpby!(1., r, rs[2]/rs[1],p)
 
-        rsold = rsnew;
+        # rsold = rsnew;
+        rs[1] = rs[2];
         counts += 1
         #return rsold;
     end
