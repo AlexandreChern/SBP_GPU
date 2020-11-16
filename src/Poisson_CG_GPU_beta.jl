@@ -5,139 +5,68 @@ using LinearMaps
 using Parameters
 using BenchmarkTools
 using LinearAlgebra
+using SBP_GPU
+using Random
 
 include("deriv_ops_beta.jl")
 include("deriv_ops_GPU.jl")
 
 
-## Define variables for this problem
-@with_kw struct variables
-    Nx = Int64(1001)
-    Ny = Int64(1001)
-    N = Int64(Nx*Ny)
-    hx = Float64(1/(Nx-1))
-    hy = Float64(1/(Ny-1))
-    x = 0:hx:1
-    y = 0:hy:1
-    alpha1 = -1
-    alpha2 = -1
-    alpha3 = -13/hx
-    alpha4 = -13/hy
-    beta = 1
+struct variables
+    Nx::Int64
+    Ny::Int64
+    N::Int64
+    hx::Float64
+    hy::Float64
+    x
+    y
+    alpha1::Float64
+    alpha2::Float64
+    alpha3::Float64
+    alpha4::Float64
+    beta::Float64
 end
 
-var = variables()
+Nx = 1001
+Ny = 1001
+N = Nx * Ny
 
-@unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
-
-
-## Define Data Containers
-
-@with_kw struct containers
-    Nx = Int64(1001)
-    Ny = Int64(1001)
-    N = Nx*Ny
-    # Array Containers
-    # y_D2x = Array{Float64,1}(undef,Nx*Ny) # container for D2x
-    # y_D2y = Array{Float64,1}(undef,Nx*Ny) # container for D2y
-    y_D2x = zeros(N)
-    y_D2y = zeros(N)
-    y_Dx = zeros(N)
-    y_Dy = zeros(N)
+variable = variables(Nx,Ny,N,(1/(Nx-1)),(1/(Ny-1)),0:1/(Nx-1):1,0:1/(Ny-1):1,-1.0,-1.0,-13/(1/(Nx-1)),-13/(1/(Ny-1)),1.0)
 
 
-    y_Hxinv = zeros(N)
-    y_Hyinv = zeros(N)
 
-
-    # VOLtoFACE containers
-    yv2f1 = zeros(N)
-    yv2f2 = zeros(N)
-    yv2f3 = zeros(N)
-    yv2f4 = zeros(N)
-
-
-    yv2fs=[yv2f1,yv2f2,yv2f3,yv2f4]
-
-
-    yf2v1 = zeros(N)
-    yf2v2 = zeros(N)
-    yf2v3 = zeros(N)
-    yf2v4 = zeros(N)
-
-    yf2vs = [yf2v1,yf2v2,yf2v3,yf2v4]
-
-
-    y_Bx = zeros(N)
-    y_By = zeros(N)
-
-    y_BxSx = zeros(N)
-    y_BySy = zeros(N)
-
-    y_BxSx_tran = zeros(N)
-    y_BySy_tran = zeros(N)
-
-    y_Hx = zeros(N)
-    y_Hy = zeros(N)
+# intermediate results
+mutable struct intermediates
+    Nx::Int64
+    Ny::Int64
+    N::Int64
+    Vol2Face::Array{Array{Float64,1},1}
+    du_x::Array{Float64,1}
+    du_y::Array{Float64,1}
+    du_ops::Array{Float64,1}
+    du1::Array{Float64,1}
+    du2::Array{Float64,1}
+    du3::Array{Float64,1}
+    du4::Array{Float64,1}
+    du5::Array{Float64,1}
+    du6::Array{Float64,1}
+    du7::Array{Float64,1}
+    du8::Array{Float64,1}
+    du9::Array{Float64,1}
+    du10::Array{Float64,1}
+    du11::Array{Float64,1}
+    du12::Array{Float64,1}
+    du13::Array{Float64,1}
+    du14::Array{Float64,1}
+    du15::Array{Float64,1}
+    du16::Array{Float64,1}
+    du17::Array{Float64,1}
+    du0::Array{Float64,1}
+    du::Array{Float64,1}
 end
 
-container = containers()
-@unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
+intermediate = intermediates(Nx,Ny,N,[zeros(N),zeros(N),zeros(N),zeros(N)],zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N),zeros(N))
 
-
-
-## intermediate results
-@with_kw struct intermediates
-    Nx = Int64(1001)
-    Ny = Int64(1001)
-    N = Nx*Ny
-    du_x = zeros(N)
-    du_y = zeros(N)
-    du_ops = zeros(N)
-    du1 = zeros(N)
-    du2 = zeros(N)
-    du3 = zeros(N)
-    du4 = zeros(N)
-    du5 = zeros(N)
-    du6 = zeros(N)
-    du7 = zeros(N)
-    du8 = zeros(N)
-    du9 = zeros(N)
-    du10 = zeros(N)
-    du11 = zeros(N)
-    du12 = zeros(N)
-    du13 = zeros(N)
-    du14 = zeros(N)
-    du15 = zeros(N)
-    du16 = zeros(N)
-    du17 = zeros(N)
-    du0 = zeros(N)
-end
-
-# @with_kw struct intermediates_GPU
-#     Nx = Int64(1001)
-#     Ny = Int64(1001)
-#     N = Nx*Ny
-#     du_ops = CuArray(zeros(N))
-#     du1 = CuArray(zeros(N))
-#     du2 = CuArray(zeros(N))
-#     du3 = CuArray(zeros(N))
-#     du4 = CuArray(zeros(N))
-#     du5 = CuArray(zeros(N))
-#     du6 = CuArray(zeros(N))
-#     du7 = CuArray(zeros(N))
-#     du8 = CuArray(zeros(N))
-#     du9 = CuArray(zeros(N))
-#     du10 = CuArray(zeros(N))
-#     du11 = CuArray(zeros(N))
-#     du12 = CuArray(zeros(N))
-#     du13 = CuArray(zeros(N))
-#     du14 = CuArray(zeros(N))
-#     du15 = CuArray(zeros(N))
-#     du16 = CuArray(zeros(N))
-#     du17 = CuArray(zeros(N))
-#     du0 = CuArray(zeros(N))
-# end
 
 mutable struct intermediates_GPU_mutable
     Nx::Int64
@@ -168,18 +97,9 @@ mutable struct intermediates_GPU_mutable
     du::CuArray{Float64,1}
 end
 
-# Nx = 10
-# Ny = 10
+
+
 # N = Nx*Ny
-# cu_zeros = CuArray(zeros(N));
-# intermediate_GPU_mut = intermediates_GPU_mutable(Nx,Ny,N,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros,cu_zeros);
-
-
-intermediate = intermediates()
-@unpack du_x, du_y, du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
-
-
-N = Nx*Ny
 cu_zeros = CuArray(zeros(N))
 iGm = intermediates_GPU_mutable(Nx,Ny,N,CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)),CuArray(zeros(N)));
 
@@ -221,17 +141,17 @@ function myMAT_beta_GPU!(du_GPU::AbstractVector, u_GPU::AbstractVector, iGm, var
     # @show iGm.du_x
 
     synchronize()
-    iGm.du2 .= CuArray(VOLtoFACE_beta(Array(iGm.du1),1,Nx,Ny,N,yv2fs))
+    iGm.du2 .= CuArray(VOLtoFACE_beta!(Array(iGm.du1),1,Nx,Ny,N,yv2fs))
     @cuda threads=blockdim_y blocks=griddim_y Hyinv_GPU_shared(iGm.du2,iGm.du3,Nx,Ny,hy, Val(TILE_DIM_2), Val(TILE_DIM_1))
     synchronize()
     iGm.du3 = alpha1 * iGm.du3
 
-    iGm.du5 = VOLtoFACE_beta(Array(iGm.du1),2,Nx,Ny,N,yv2fs)
+    iGm.du5 = VOLtoFACE_beta!(Array(iGm.du1),2,Nx,Ny,N,yv2fs)
     @cuda threads=blockdim_y blocks=griddim_y Hyinv_GPU_shared(iGm.du5,iGm.du6,Nx,Ny,hy, Val(TILE_DIM_2), Val(TILE_DIM_1))
     synchronize()
     iGm.du6 = alpha2 * iGm.du6
 
-    iGm.du7 = CuArray(VOLtoFACE_beta(Array(u_GPU),3,Nx,Ny,N,yv2fs))
+    iGm.du7 = CuArray(VOLtoFACE_beta!(Array(u_GPU),3,Nx,Ny,N,yv2fs))
     @cuda threads=blockdim_x blocks=griddim_x BxSx_tran_GPU_shared(iGm.du7,iGm.du8,Nx,Ny,hx,Val(TILE_DIM_1), Val(TILE_DIM_2))
     synchronize()
     @cuda threads=blockdim_x blocks=griddim_x Hxinv_GPU_shared(iGm.du8,iGm.du9,Nx,Ny,hx, Val(TILE_DIM_1), Val(TILE_DIM_2))
@@ -242,7 +162,7 @@ function myMAT_beta_GPU!(du_GPU::AbstractVector, u_GPU::AbstractVector, iGm, var
     synchronize()
     iGm.du11 =alpha3 * iGm.du11
 
-    iGm.du12 = CuArray(VOLtoFACE_beta(Array(u_GPU),4,Nx,Ny,N,yv2fs))
+    iGm.du12 = CuArray(VOLtoFACE_beta!(Array(u_GPU),4,Nx,Ny,N,yv2fs))
     synchronize()
     @cuda threads=blockdim_x blocks=griddim_x BxSx_tran_GPU_shared(iGm.du12,iGm.du13,Nx,Ny,hx,Val(TILE_DIM_1), Val(TILE_DIM_2))
     synchronize()
@@ -272,52 +192,60 @@ function myMAT_beta_GPU!(du_GPU::AbstractVector, u_GPU::AbstractVector, iGm, var
     # return output2
 end
 
+Random.seed!(1234)
 u = randn(N);
 u_GPU = CuArray(u);
 
 du = similar(u);
 du_GPU = similar(u_GPU);
 
-myMAT_beta_GPU!(du_GPU,u_GPU,iGm,var)
+# myMAT_beta_GPU!(du_GPU,u_GPU,iGm,var)
 
 
-function myMAT_beta!(du::AbstractVector, u::AbstractVector,container,var_test,intermediate)
-#function myMAT_beta!(du::AbstractVector, u::AbstractVector, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy,Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta,du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0)
-    @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
-    @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
-    @unpack du_x, du_y, du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
+function myMAT_beta!(du::AbstractVector, u::AbstractVector,variable,intermediate)
+    D2x_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_x)
+    D2y_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du_y)
 
+    intermediate.du_ops .= intermediate.du_x + intermediate.du_y
+    BySy_beta!(u,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du1)
+    VOLtoFACE_beta!(intermediate.du1,1,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    Hyinv_beta!(intermediate.Vol2Face[1],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha1,intermediate.du3)     #compute action of P1  .= for faster assignment
 
-    du_x = D2x_beta(u,Nx,Ny,N,hx,hy,y_D2x)
-    du_y = D2y_beta(u,Nx,Ny,N,hx,hy,y_D2y)
+    VOLtoFACE_beta!(intermediate.du1,2,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    Hyinv_beta!(intermediate.Vol2Face[2],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy, variable.alpha2,intermediate.du6)
+    
+    #compute action of P2
+    VOLtoFACE_beta!(u,3,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    BxSx_tran_beta!(intermediate.Vol2Face[3],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du8)
+    Hxinv_beta!(intermediate.du8,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy, variable.beta, intermediate.du9)
+    Hxinv_beta!(intermediate.Vol2Face[3],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha3,intermediate.du11)   #compute action of P3
 
-    du_ops .= du_x + du_y
-    # du_ops .= D2x_beta(u,Nx,Ny,N,hx,hy,y_D2x) .+ D2y_beta(u,Nx,Ny,N,hx,hy,y_D2y)  #compute action of D2x + D2y
-    du1 = BySy_beta(u,Nx,Ny,N,hx,hy,y_BySy)
-    du2 = VOLtoFACE_beta(du1,1,Nx,Ny,N,yv2fs)
-    du3 .= alpha1 .* Hyinv_beta(du2,Nx,Ny,N,hx,hy,y_Hyinv)     #compute action of P1  .= for faster assignment
-
-    du5 = VOLtoFACE_beta(du1,2,Nx,Ny,N,yv2fs)
-    du6 .= alpha2 .* Hyinv_beta(du5,Nx,Ny,N,hx,hy,y_Hyinv)    #compute action of P2
-
-    du7 = VOLtoFACE_beta(u,3,Nx,Ny,N,yv2fs)
-    du8 = BxSx_tran_beta(du7,Nx,Ny,N,hx,hy,y_BxSx_tran)
-    du9 .= beta .* Hxinv_beta(du8,Nx,Ny,N,hx,hy,y_Hxinv)
-    du11 .= alpha3 .* Hxinv_beta(du7,Nx,Ny,N,hx,hy,y_Hxinv)   #compute action of P3
-
-    du12 = VOLtoFACE_beta(u,4,Nx,Ny,N,yv2fs)
-    du13 = BxSx_tran_beta(du12,Nx,Ny,N,hx,hy,y_Hxinv)
-    du14 .= beta .* Hxinv_beta(du13,Nx,Ny,N,hx,hy,y_Hxinv)
-    du16 .= alpha4 .* Hxinv_beta(du12,Nx,Ny,N,hx,hy,y_Hxinv)  #compute action of P4
-    du0 .= du_ops .+ du3 .+ du6 .+ du9 .+ du11 .+ du14 .+ du16 #Collect together
-    du17 = Hy_beta(du0,Nx,Ny,N,hx,hy,y_Hy)
-	du .= -1.0 .* Hx_beta(du17,Nx,Ny,N,hx,hy,y_Hx)
-    return du
+    VOLtoFACE_beta!(u,4,variable.Nx,variable.Ny,variable.N,intermediate.Vol2Face)
+    BxSx_tran_beta!(intermediate.Vol2Face[4],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du13)
+    Hxinv_beta!(intermediate.du13,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.beta,intermediate.du14)
+    Hxinv_beta!(intermediate.Vol2Face[4],variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,variable.alpha4,intermediate.du16)  #compute action of P4
+    intermediate.du0 .= intermediate.du_ops .+ intermediate.du3 .+ intermediate.du6 .+ intermediate.du9 .+ intermediate.du11 .+ intermediate.du14 .+ intermediate.du16 #Collect together
+    Hy_beta!(intermediate.du0,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy,intermediate.du17)
+	Hx_beta!(intermediate.du17,variable.Nx,variable.Ny,variable.N,variable.hx,variable.hy, -1.0,intermediate.du)
+    return intermediate.du
 end
 
 
-function Generate(var)
-    @unpack Nx,Ny,N,hx,hy,x,y,alpha1,alpha2,alpha3,alpha4,beta = var
+function Generate(variable)
+    # @unpack Nx,Ny,N,hx,hy,x,y,alpha1,alpha2,alpha3,alpha4,beta = var
+    Nx = variable.Nx
+    Ny = variable.Ny
+    N = variable.N
+    hx = variable.hx
+    hy = variable.hy
+    x = variable.x
+    y = variable.y
+    alpha1 = variable.alpha1
+    alpha2 = variable.alpha2
+    alpha3 = variable.alpha3
+    alpha4 = variable.alpha4
+    beta = variable.beta
+
     g1 = -pi .* cos.(pi .* x)
     g2 = pi .* cos.(pi .* x .+ pi)
     g3 = sin.(pi .* y)
@@ -361,7 +289,7 @@ function Generate(var)
     return b,exact
 end
 
-b,exact = Generate(var)
+b,exact = Generate(variable)
 
 
 
@@ -377,60 +305,62 @@ end
 var_cg = var_cgs()
 
 #@unpack u, du, N = var_cg
+Random.seed!(1234)
 du = zeros(N);
 u = zeros(N);
 
 
 
-function conjugate(myMAT_beta!,b,container,var,intermediate,maxIteration)
-    @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
-    @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
-    @unpack du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
+# function conjugate(myMAT_beta!,b,container,var,intermediate,maxIteration)
+#     @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
+#     @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
+#     @unpack du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
 
-    u = zeros(N);
-    tol = 1e-16
-    r = b - myMAT_beta!(du,u,container,var,intermediate,maxIteration)
-    p = r
-    rsold = r'*r
+#     u = zeros(N);
+#     tol = 1e-16
+#     r = b - myMAT_beta!(du,u,container,var,intermediate,maxIteration)
+#     p = r
+#     rsold = r'*r
 
-    counts = 0
-    for i = 1:N
-        Ap = myMAT_beta!(du,p,container,var,intermediate,maxIteration)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
-        alpha = rsold / (p'*Ap)
-        u = u + alpha * p
-        #axpy!(alpha,p,u)
-        r = r - alpha * Ap
-        #axpy!(-alpha,Ap,r)
-        rsnew = r'*r
-        if sqrt(rsnew) < tol
-            break
-        end
-        p = r + (rsnew/rsold) * p
-        rsold = rsnew;
-        counts += 1
-        #return rsold;
-    end
-    return u, counts
-end
+#     counts = 0
+#     for i = 1:N
+#         Ap = myMAT_beta!(du,p,container,var,intermediate,maxIteration)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
+#         alpha = rsold / (p'*Ap)
+#         u = u + alpha * p
+#         #axpy!(alpha,p,u)
+#         r = r - alpha * Ap
+#         #axpy!(-alpha,Ap,r)
+#         rsnew = r'*r
+#         if sqrt(rsnew) < tol
+#             break
+#         end
+#         p = r + (rsnew/rsold) * p
+#         rsold = rsnew;
+#         counts += 1
+#         #return rsold;
+#     end
+#     return u, counts
+# end
 
 r = similar(u)
-function conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,maxIteration)
-    @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
-    @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
-    @unpack du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
+function conjugate_beta(myMAT_beta!,r,b,variable,intermediate,maxIteration)
+    # @unpack N, y_D2x, y_D2y, y_Dx, y_Dy, y_Hxinv, y_Hyinv, yv2f1, yv2f2, yv2f3, yv2f4, yv2fs, yf2v1, yf2v2, yf2v3, yf2v4, yf2vs, y_Bx, y_By, y_BxSx, y_BySy, y_BxSx_tran, y_BySy_tran, y_Hx, y_Hy = container
+    # @unpack Nx,Ny,N,hx,hy,alpha1,alpha2,alpha3,alpha4,beta = var
+    # @unpack du_ops,du1,du2,du3,du4,du5,du6,du7,du8,du9,du10,du11,du12,du13,du14,du15,du16,du17,du0 = intermediate
 
+    N = variable.N
     u = zeros(N);
     du = zeros(N);
     tol = 1e-16
 
-    r .= b .- myMAT_beta!(du,u,container,var,intermediate)
+    r .= b .- myMAT_beta!(du,u,variable,intermediate)
     p = copy(r)
     Ap = similar(u)
     rsold = r'*r
     counts = 0
     # maxIteration = 1000
     for i = 1:maxIteration
-        Ap .= myMAT_beta!(du,p,container,var,intermediate)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
+        Ap .= myMAT_beta!(du,p,variable,intermediate)   # can't simply translate MATLAB code, p = r create a link from p to r, once p modified, r will be modified
         alpha = rsold / (p'*Ap)
         #u = u + alpha * p
         axpy!(alpha,p,u) # BLAS function
@@ -496,11 +426,11 @@ function conjugate_beta_GPU(myMAT_beta_GPU!,b,var,maxIteration)
     return u_GPU, counts
 end
 
-(uGPU, countsGPU) = conjugate_beta_GPU(myMAT_beta_GPU!,b,var,100)
-conjugate_beta_GPU(myMAT_beta_GPU!,r,b,container,var,intermediate,100)
+# (uGPU, countsGPU) = conjugate_beta_GPU(myMAT_beta_GPU!,b,var,100)
+# conjugate_beta_GPU(myMAT_beta_GPU!,r,b,container,var,intermediate,100)
 
 
-(u1,counts1) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,100)
+(u1,counts1) = conjugate_beta(myMAT_beta!,r,b,variable,intermediate,100)
 u1 = copy(u1)
 (u2,counts2) = conjugate_beta(myMAT_beta!,r,b,container,var,intermediate,2000)
 u2 = copy(u2)

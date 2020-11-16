@@ -120,19 +120,19 @@ end
 
 
 
-function Hxinv_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Hxinv_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, coef::Float64, y_out::Array{Float64,1})
 	#N = Nx*Ny
 	#y = similar(y_in)
 	@inbounds for idx = 1:Ny
-		y_out[idx] = (2*y_in[idx]) * (1/hx)
+		y_out[idx] = coef * (2*y_in[idx]) * (1/hx)
 	end
 
 	@inbounds for idx1 = Ny+1:N-Ny
-		y_out[idx1] = (1*y_in[idx1]) * (1/hx)
+		y_out[idx1] = coef * (1*y_in[idx1]) * (1/hx)
 	end
 
 	@inbounds for idx2 = N-Ny+1:N
-		y_out[idx2] = (2*y_in[idx2]) * (1/hx)
+		y_out[idx2] = coef * (2*y_in[idx2]) * (1/hx)
 	end
 
 	# return y_out
@@ -140,22 +140,22 @@ end
 
 
 
-function Hyinv_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Hyinv_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, coef::Float64, y_out::Array{Float64,1})
 	#N = Nx*Ny
 	#y = similar(y_in)
 	#hx = Float64(1/(Nx-1))
 	#hy = Float64(1/(Ny-1))
 	@inbounds for idx = 1:Ny:N-Ny+1
-		y_out[idx] = (2*y_in[idx]) * (1/hy)
+		y_out[idx] = coef * (2*y_in[idx]) * (1/hy)
 	end
 
 	@inbounds for idx1 = Ny:Ny:N
-		y_out[idx1] = (2*y_in[idx1]) * (1/hy)
+		y_out[idx1] = coef * (2*y_in[idx1]) * (1/hy)
 	end
 
 	@inbounds for i = 1:Nx
 		@inbounds for idx2 = 2+(i-1)*Ny:i*Ny-1
-			y_out[idx2] = (y_in[idx2]) * (1/hy)
+			y_out[idx2] = coef * (y_in[idx2]) * (1/hy)
 		end
 	end
 	# return y_out
@@ -163,17 +163,17 @@ end
 
 
 
-function Hx_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64, y_out::Array{Float64,1})
+function Hx_beta!(y_in::Array{Float64,1}, Nx::Int64, Ny::Int64, N::Int64, hx::Float64, hy::Float64,coef::Float64 ,y_out::Array{Float64,1})
 	@inbounds for idx = 1:Ny
-		y_out[idx] = hx*y_in[idx]/2
+		y_out[idx] = coef * hx*y_in[idx]/2
 	end
 
 	@inbounds for idx1 = Ny+1:N-Ny
-		y_out[idx1] = hx*y_in[idx1]
+		y_out[idx1] = coef* hx*y_in[idx1]
 	end
 
 	@inbounds for idx2 = N-Ny+1:N
-		y_out[idx2] = hx*y_in[idx2]/2
+		y_out[idx2] = coef * hx*y_in[idx2]/2
 	end
 	# return y_out
 end
@@ -202,7 +202,7 @@ end
 
 
 
-function FACEtoVOL_beta!(y_in_face::Array{Float64,1}, face::Int64, Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1})
+function FACEtoVOL_beta!(y_in_face::Array{Float64,1},  face::Int64, Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1})
 	if face == 1
 		idx = 1:Ny:N-Ny+1
 	elseif face==2
@@ -220,7 +220,7 @@ end
 
 
 
-function VOLtoFACE_beta!(y_in::Array{Float64,1},face::Int64,Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1}) ## Has some issue
+function VOLtoFACE_beta!(y_in::Array{Float64,1}, face::Int64,Nx::Int64, Ny::Int64, N::Int64, y_outs::Array{Array{Float64,1},1}) ## Has some issue
 	if face == 1
 			idx = 1:Ny:N-Ny+1
 	elseif face == 2

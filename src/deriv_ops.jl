@@ -206,7 +206,7 @@ function VOLtoFACE(y_in, face, Nx, Ny)
     end
 
 	y_out[idx] = y_in[idx]
-    return y
+    return y_out
 end
 
 function Bx(Nx,Ny)
